@@ -1,0 +1,40 @@
+{
+  "name": "@xian/optimizer",
+  "version": "1.0.0",
+  "description": "Xian优化器：扫描项目结构，把简短需求改写成带精确代码路径、约束、步骤与验收标准的提示词。",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "main": "lib/host.js",
+  "exports": {
+    ".": "./lib/host.js",
+    "./client": "./lib/client.js",
+    "./core": "./lib/core.mjs",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ]
+    }
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "optimize": "node scripts/xian.mjs optimize",
+    "index": "node scripts/xian.mjs index",
+    "doctor": "node scripts/xian.mjs doctor"
+  },
+  "files": [
+    "LICENSE",
+    "SKILL.md",
+    "README.md",
+    "assets",
+    "lib",
+    "scripts",
+    "references"
+  ]
+}
