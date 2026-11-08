@@ -419,6 +419,12 @@ await test('persistent widget renders project metrics and depth controls', async
   assert.ok(nodes.some((node) => node.props && node.props['data-xian-mascot'] === 'widget'));
   const dragHandle = nodes.find((node) => node.props && node.props['data-xian-drag'] === 'header');
   assert.ok(dragHandle && typeof dragHandle.props.onPointerDown === 'function');
+  const images = nodes.filter((node) => node.type === 'img');
+  assert.ok(images.length > 0);
+  for (const image of images) {
+    assert.equal(image.props.draggable, false);
+    assert.equal(typeof image.props.onDragStart, 'function');
+  }
   const miniPortal = widgetPortal.portal.type({ ...widgetPortal.portal.props, open: false });
   assert.equal(miniPortal.props['data-xian-mascot'], 'mini');
   assert.equal(typeof miniPortal.props.onPointerDown, 'function');
@@ -478,6 +484,9 @@ await test('composer button posts the draft without replacing it immediately', a
   includes(code, '理解深度');
   includes(code, 'xian-widget-pos');
   includes(code, 'data-xian-drag');
+  includes(code, 'draggable: false');
+  includes(code, 'onDragStart');
+  includes(code, 'WebkitUserDrag');
 });
 
 await test('successful optimization opens a preview dialog with copy and replace actions', async () => {

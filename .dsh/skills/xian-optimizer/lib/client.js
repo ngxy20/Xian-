@@ -155,7 +155,8 @@ window.__ModuleLoader__.load({
 @keyframes xian-mascot-bob { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-4px) } }
 @keyframes xian-mascot-pulse { 0%,100% { opacity: .45; transform: scale(.92) } 50% { opacity: 1; transform: scale(1.08) } }
 @keyframes xian-mascot-shine { 0% { transform: translateX(-120%) } 100% { transform: translateX(240%) } }
-.xian-mascot-img { animation: xian-mascot-bob 2.8s ease-in-out infinite; }
+.xian-mascot-img { animation: xian-mascot-bob 2.8s ease-in-out infinite; -webkit-user-drag: none; user-select: none; }
+.xian-mascot-face { -webkit-user-drag: none; user-select: none; }
 .xian-mascot-dot { animation: xian-mascot-pulse 1.2s ease-in-out infinite; }
 .xian-mascot-shine { animation: xian-mascot-shine 1.8s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
@@ -263,6 +264,8 @@ window.__ModuleLoader__.load({
 						src: useFront ? "/api/xian/asset?name=front" : "/api/xian/asset?name=side",
 						alt: "Xian 角色",
 						className: "xian-mascot-img",
+						draggable: false,
+						onDragStart: (event) => event.preventDefault(),
 						onError: () => setImgFailed(true),
 						style: {
 							position: "absolute",
@@ -271,6 +274,8 @@ window.__ModuleLoader__.load({
 							width: 104,
 							height: 132,
 							objectFit: "contain",
+							WebkitUserDrag: "none",
+							userSelect: "none",
 							filter: "drop-shadow(0 10px 18px rgba(0, 0, 0, 0.45))",
 						},
 					}),
@@ -420,6 +425,7 @@ window.__ModuleLoader__.load({
 						onPointerMove: moveDrag,
 						onPointerUp: endDrag,
 						onPointerCancel: endDrag,
+						onDragStart: (event) => event.preventDefault(),
 						title: `Xian优化器 · ${projectName} · 理解程度 ${understanding}% · 点击展开，拖动可移动`,
 						"data-xian-mascot": "mini",
 						"data-xian-drag": "mini",
@@ -449,8 +455,11 @@ window.__ModuleLoader__.load({
 							: React.createElement("img", {
 								src: "/api/xian/asset?name=face",
 								alt: "Xian",
+								draggable: false,
+								className: "xian-mascot-face",
+								onDragStart: (event) => event.preventDefault(),
 								onError: () => setImgFailed(true),
-								style: { width: "100%", height: "100%", objectFit: "cover" },
+								style: { width: "100%", height: "100%", objectFit: "cover", WebkitUserDrag: "none", userSelect: "none" },
 							}),
 					),
 					React.createElement(
@@ -505,6 +514,7 @@ window.__ModuleLoader__.load({
 					"data-xian-mascot": "widget",
 					"data-xian-drag": "card",
 					"data-xian-phase": phase,
+					onDragStart: (event) => event.preventDefault(),
 				},
 				React.createElement("div", {
 					style: {
@@ -534,6 +544,8 @@ window.__ModuleLoader__.load({
 						src: `/api/xian/asset?name=${imageName}`,
 						alt: "Xian 角色",
 						className: "xian-mascot-img",
+						draggable: false,
+						onDragStart: (event) => event.preventDefault(),
 						onError: () => setImgFailed(true),
 						onPointerDown: beginDrag,
 						onPointerMove: moveDrag,
@@ -549,13 +561,15 @@ window.__ModuleLoader__.load({
 							objectFit: "contain",
 							cursor: "grab",
 							touchAction: "none",
+							WebkitUserDrag: "none",
+							userSelect: "none",
 							filter: "drop-shadow(0 10px 18px rgba(0, 0, 0, 0.45))",
 						},
 					}),
 				React.createElement(
 					"div",
 					{
-						style: { position: "relative", display: "flex", alignItems: "center", gap: 6, minHeight: 22, cursor: "grab", touchAction: "none" },
+						style: { position: "relative", display: "flex", alignItems: "center", gap: 6, minHeight: 22, cursor: "grab", touchAction: "none", userSelect: "none" },
 						onPointerDown: (event) => beginDrag(event, true),
 						onPointerMove: moveDrag,
 						onPointerUp: endDrag,
@@ -865,6 +879,8 @@ window.__ModuleLoader__.load({
 				src: "/api/xian/asset?name=face",
 				alt: "",
 				"aria-hidden": true,
+				draggable: false,
+				onDragStart: (event) => event.preventDefault(),
 				onError: () => setFailed(true),
 				style: {
 					width: 18,
@@ -874,6 +890,8 @@ window.__ModuleLoader__.load({
 					background: "rgba(120, 160, 255, 0.14)",
 					boxShadow: "0 0 0 1px rgba(140, 180, 255, 0.35)",
 					flex: "none",
+					WebkitUserDrag: "none",
+					userSelect: "none",
 				},
 			});
 		}
