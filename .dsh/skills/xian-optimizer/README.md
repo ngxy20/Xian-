@@ -252,8 +252,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install-ui.ps1 -Uninstall
   - **优化深度**四档：快速 / 标准 / 深度 / 极致
   - 「重新理解」按钮：重新扫描当前项目
 - **主动加载**：打开会话后自动请求 `POST /api/xian/insight`，不需要先点优化按钮。
+- **位置可拖动**：收起态拖动头像、展开态拖动标题或角色即可移动；位置保存到 `xian-widget-pos`，窗口缩放时自动夹回可视区；「复位」按钮恢复到右下角。
 - **扫描中**：挂件切换为侧视角色，显示阶段、文件数、进度条和实时理解深度；完成后切回正视角色并刷新指标。
-- 状态保存在 `localStorage`：`xian-widget-open`、`xian-depth`。
+- 状态保存在 `localStorage`：`xian-widget-open`、`xian-depth`、`xian-widget-pos`。
 
 | 优化深度 | 定位位置 | 提示词上限 | 全文兜底 |
 | --- | ---: | ---: | --- |

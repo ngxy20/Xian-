@@ -417,8 +417,11 @@ await test('persistent widget renders project metrics and depth controls', async
   const depthButtons = nodes.filter((node) => node.props && node.props['data-xian-depth']);
   assert.deepEqual(depthButtons.map((node) => node.props['data-xian-depth']), ['fast', 'standard', 'deep', 'max']);
   assert.ok(nodes.some((node) => node.props && node.props['data-xian-mascot'] === 'widget'));
+  const dragHandle = nodes.find((node) => node.props && node.props['data-xian-drag'] === 'header');
+  assert.ok(dragHandle && typeof dragHandle.props.onPointerDown === 'function');
   const miniPortal = widgetPortal.portal.type({ ...widgetPortal.portal.props, open: false });
   assert.equal(miniPortal.props['data-xian-mascot'], 'mini');
+  assert.equal(typeof miniPortal.props.onPointerDown, 'function');
 });
 
 await test('composer button posts the draft without replacing it immediately', async () => {
@@ -473,6 +476,8 @@ await test('composer button posts the draft without replacing it immediately', a
   includes(code, 'data-xian-depth');
   includes(code, '优化深度');
   includes(code, '理解深度');
+  includes(code, 'xian-widget-pos');
+  includes(code, 'data-xian-drag');
 });
 
 await test('successful optimization opens a preview dialog with copy and replace actions', async () => {

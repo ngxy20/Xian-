@@ -122,6 +122,31 @@ window.__ModuleLoader__.load({
 			}
 		}
 
+		function readStoredPosition() {
+			try {
+				const raw = window.localStorage.getItem("xian-widget-pos");
+				if (!raw) return null;
+				const parsed = JSON.parse(raw);
+				if (!parsed || !Number.isFinite(parsed.x) || !Number.isFinite(parsed.y)) return null;
+				return { x: Math.round(parsed.x), y: Math.round(parsed.y) };
+			} catch {
+				return null;
+			}
+		}
+
+		function writeStoredPosition(position) {
+			try {
+				if (position) window.localStorage.setItem("xian-widget-pos", JSON.stringify(position));
+				else window.localStorage.removeItem("xian-widget-pos");
+			} catch {
+				// storage is optional
+			}
+		}
+
+		function clampNumber(value, min, max) {
+			return Math.max(min, Math.min(max, value));
+		}
+
 		function depthOption(id) {
 			return DEPTH_OPTIONS.find((item) => item.id === id) || DEPTH_OPTIONS[1];
 		}
@@ -309,7 +334,7 @@ window.__ModuleLoader__.load({
 			);
 		}
 
-		function XianWidget({ open, onToggle, onRefresh, onDepth, depth, insight, insightLoading, insightError, phase, progress }) {
+		function XianWidget({ open, onToggle, onRefresh, onDepth, onReset, onMove, position, depth, insight, insightLoading, insightError, phase, progress }) {
 			const loading = phase === "loading";
 			const understanding = clampPercent(loading ? progress.depth : insight && insight.understanding, 0);
 			const percent = loading ? clampPercent(progress.percent) : understanding;
@@ -318,17 +343,91 @@ window.__ModuleLoader__.load({
 			const projectName = (insight && insight.name) || "当前项目";
 			const imageName = loading ? "side" : "front";
 			const [imgFailed, setImgFailed] = React.useState(false);
+			const rootRef = React.useRef(null);
+			const dragRef = React.useRef(null);
+			const suppressClick = React.useRef(false);
+			const positionStyle = position ? { left: position.x, top: position.y, right: "auto", bottom: "auto" } : {};
+
+			function beginDrag(event, ignoreButtons = false) {
+				if (event.button !== undefined && event.button !== 0) return;
+				if (ignoreButtons && event.target && event.target.closest && event.target.closest("button")) return;
+				const node = rootRef.current;
+				if (!node) return;
+				const rect = node.getBoundingClientRect();
+				dragRef.current = {
+					startX: event.clientX,
+					startY: event.clientY,
+					offsetX: event.clientX - rect.left,
+					offsetY: event.clientY - rect.top,
+					width: rect.width,
+					height: rect.height,
+					moved: false,
+				};
+				try {
+					event.currentTarget.setPointerCapture?.(event.pointerId);
+				} catch {
+					// pointer capture is best-effort
+				}
+			}
+
+			function moveDrag(event) {
+				const drag = dragRef.current;
+				if (!drag) return;
+				const dx = event.clientX - drag.startX;
+				const dy = event.clientY - drag.startY;
+				if (!drag.moved && Math.hypot(dx, dy) < 3) return;
+				drag.moved = true;
+				const x = clampNumber(event.clientX - drag.offsetX, 8, Math.max(8, window.innerWidth - drag.width - 8));
+				const y = clampNumber(event.clientY - drag.offsetY, 8, Math.max(8, window.innerHeight - drag.height - 8));
+				onMove({ x: Math.round(x), y: Math.round(y) });
+			}
+
+			function endDrag() {
+				const drag = dragRef.current;
+				if (!drag) return;
+				if (drag.moved) suppressClick.current = true;
+				dragRef.current = null;
+			}
+
+			React.useEffect(() => {
+				if (!position || typeof window === "undefined") return undefined;
+				const clampToViewport = () => {
+					if (!rootRef.current) return;
+					const rect = rootRef.current.getBoundingClientRect();
+					const x = clampNumber(position.x, 8, Math.max(8, window.innerWidth - rect.width - 8));
+					const y = clampNumber(position.y, 8, Math.max(8, window.innerHeight - rect.height - 8));
+					if (x !== position.x || y !== position.y) onMove({ x, y });
+				};
+				clampToViewport();
+				window.addEventListener("resize", clampToViewport);
+				return () => window.removeEventListener("resize", clampToViewport);
+			}, [position, open]);
 
 			if (!open) {
 				return React.createElement(
 					"button",
 					{
 						type: "button",
-						onClick: onToggle,
-						title: `Xian优化器 · ${projectName} · 理解程度 ${understanding}% · 点击展开`,
+						ref: rootRef,
+						onClick: () => {
+							if (suppressClick.current) {
+								suppressClick.current = false;
+								return;
+							}
+							onToggle();
+						},
+						onPointerDown: beginDrag,
+						onPointerMove: moveDrag,
+						onPointerUp: endDrag,
+						onPointerCancel: endDrag,
+						title: `Xian优化器 · ${projectName} · 理解程度 ${understanding}% · 点击展开，拖动可移动`,
 						"data-xian-mascot": "mini",
+						"data-xian-drag": "mini",
 						style: {
 							...MASCOT_MINI,
+							...positionStyle,
+							cursor: "grab",
+							touchAction: "none",
 							background: `conic-gradient(${understanding >= 55 ? "#67e8f9" : "#6ea8ff"} ${understanding}%, rgba(255,255,255,.13) 0%)`,
 						},
 					},
@@ -399,10 +498,12 @@ window.__ModuleLoader__.load({
 			return React.createElement(
 				"div",
 				{
-					style: { ...MASCOT_CARD, maxHeight: "min(540px, calc(100vh - 130px))", overflowY: "auto" },
+					ref: rootRef,
+					style: { ...MASCOT_CARD, ...positionStyle, maxHeight: "min(540px, calc(100vh - 130px))", overflowY: "auto" },
 					role: "region",
 					"aria-label": "Xian 项目理解挂件",
 					"data-xian-mascot": "widget",
+					"data-xian-drag": "card",
 					"data-xian-phase": phase,
 				},
 				React.createElement("div", {
@@ -434,6 +535,11 @@ window.__ModuleLoader__.load({
 						alt: "Xian 角色",
 						className: "xian-mascot-img",
 						onError: () => setImgFailed(true),
+						onPointerDown: beginDrag,
+						onPointerMove: moveDrag,
+						onPointerUp: endDrag,
+						onPointerCancel: endDrag,
+						"data-xian-drag": "image",
 						style: {
 							position: "absolute",
 							left: 10,
@@ -441,12 +547,22 @@ window.__ModuleLoader__.load({
 							width: 98,
 							height: 126,
 							objectFit: "contain",
+							cursor: "grab",
+							touchAction: "none",
 							filter: "drop-shadow(0 10px 18px rgba(0, 0, 0, 0.45))",
 						},
 					}),
 				React.createElement(
 					"div",
-					{ style: { position: "relative", display: "flex", alignItems: "center", gap: 6, minHeight: 22 } },
+					{
+						style: { position: "relative", display: "flex", alignItems: "center", gap: 6, minHeight: 22, cursor: "grab", touchAction: "none" },
+						onPointerDown: (event) => beginDrag(event, true),
+						onPointerMove: moveDrag,
+						onPointerUp: endDrag,
+						onPointerCancel: endDrag,
+						title: "拖动标题或角色可移动挂件",
+						"data-xian-drag": "header",
+					},
 					React.createElement("span", {
 						className: "xian-mascot-dot",
 						style: { width: 6, height: 6, borderRadius: 99, background: loading ? "#7dd3fc" : "#34d399", boxShadow: "0 0 10px rgba(125, 211, 252, .8)" },
@@ -569,6 +685,17 @@ window.__ModuleLoader__.load({
 					React.createElement(
 						"div",
 						{ style: { marginTop: 8, display: "flex", alignItems: "center", gap: 6 } },
+						React.createElement(
+							"button",
+							{
+								type: "button",
+								onClick: onReset,
+								disabled: loading,
+								title: "复位到右下角",
+								style: { ...buttonStyle("secondary"), height: 25, fontSize: 11, padding: "0 9px", opacity: loading ? 0.55 : 1 },
+							},
+							"复位",
+						),
 						React.createElement(
 							"button",
 							{
@@ -773,6 +900,7 @@ window.__ModuleLoader__.load({
 			const [insightLoading, setInsightLoading] = React.useState(false);
 			const [insightError, setInsightError] = React.useState("");
 			const [insightNonce, setInsightNonce] = React.useState(0);
+			const [widgetPos, setWidgetPos] = React.useState(() => readStoredPosition());
 			const timer = React.useRef(null);
 			const progressTimer = React.useRef(null);
 
@@ -846,6 +974,18 @@ window.__ModuleLoader__.load({
 
 			function refreshInsight() {
 				setInsightNonce((value) => value + 1);
+			}
+
+			function moveWidget(next) {
+				if (!next || !Number.isFinite(next.x) || !Number.isFinite(next.y)) return;
+				const value = { x: Math.round(next.x), y: Math.round(next.y) };
+				setWidgetPos(value);
+				writeStoredPosition(value);
+			}
+
+			function resetWidget() {
+				setWidgetPos(null);
+				writeStoredPosition(null);
 			}
 
 			function stopProgressTimer() {
@@ -1116,6 +1256,9 @@ window.__ModuleLoader__.load({
 						onToggle: toggleWidget,
 						onRefresh: refreshInsight,
 						onDepth: changeDepth,
+						onReset: resetWidget,
+						onMove: moveWidget,
+						position: widgetPos,
 						depth,
 						insight,
 						insightLoading,
